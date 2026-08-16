@@ -14,20 +14,28 @@ import { fileURLToPath } from "node:url";
 import {
   allPresets,
   completeParams,
+  defaultParams,
   makeParams,
   mutateParams,
   parameterInfo,
+  parseBfxrFile,
+  parsePermalink,
+  permalink,
+  render,
   version,
+  WAVE_NAMES,
   WAVE_TYPES,
 } from "./engine.js";
-import { createSound } from "./sounds.js";
+import { createSound, updateSoundParams } from "./sounds.js";
 import {
   getEntry,
   groups,
   loadLibrary,
+  peaks,
   removeEntry,
   updateEntry,
 } from "./library.js";
+import { encodeWav } from "./wav.js";
 import { designFromPrompt, nameFromPrompt } from "./design.js";
 import { claudeAvailable, designWithClaude } from "./claude.js";
 import { resolveOutputDir, safeName } from "./output.js";
@@ -171,6 +179,154 @@ function mutate(body) {
   return { sounds };
 }
 
+/* ------------------------------------------------------------------ editor */
+
+/**
+ * How the editor stacks its sliders, mirroring the panels on bfxr.net. Any
+ * parameter the vendored synth grows that isn't listed here still shows up,
+ * under "Other".
+ */
+const PARAM_GROUPS = [
+  {
+    title: "Envelope",
+    params: [
+      "attackTime",
+      "sustainTime",
+      "sustainPunch",
+      "decayTime",
+      "compressionAmount",
+      "masterVolume",
+    ],
+  },
+  {
+    title: "Frequency",
+    params: [
+      "frequency_start",
+      "frequency_slide",
+      "frequency_acceleration",
+      "min_frequency_relative_to_starting_frequency",
+    ],
+  },
+  { title: "Vibrato", params: ["vibratoDepth", "vibratoSpeed"] },
+  {
+    title: "Pitch Jump",
+    params: [
+      "pitch_jump_repeat_speed",
+      "pitch_jump_amount",
+      "pitch_jump_onset_percent",
+      "pitch_jump_2_amount",
+      "pitch_jump_onset2_percent",
+    ],
+  },
+  { title: "Harmonics", params: ["overtones", "overtoneFalloff"] },
+  {
+    title: "Square Wave",
+    params: ["squareDuty", "dutySweep"],
+    // Bfxr greys these out unless the square wave is selected.
+    requires_wave: WAVE_TYPES.Square,
+  },
+  { title: "Repeat", params: ["repeatSpeed"] },
+  { title: "Flanger", params: ["flangerOffset", "flangerSweep"] },
+  {
+    title: "Filters",
+    params: [
+      "lpFilterCutoff",
+      "lpFilterCutoffSweep",
+      "lpFilterResonance",
+      "hpFilterCutoff",
+      "hpFilterCutoffSweep",
+    ],
+  },
+  { title: "Bit Crush", params: ["bitCrush", "bitCrushSweep"] },
+];
+
+/** Slider layout with anything the groups above missed appended. */
+function paramGroups() {
+  const known = new Set(PARAM_GROUPS.flatMap((group) => group.params));
+  const rest = parameterInfo()
+    .filter((p) => p.type === "number" && !known.has(p.name))
+    .map((p) => p.name);
+  return rest.length
+    ? [...PARAM_GROUPS, { title: "Other", params: rest }]
+    : PARAM_GROUPS;
+}
+
+const PREVIEW_BUCKETS = 240;
+
+/**
+ * Render parameters to audio without writing anything to disk — this is what
+ * makes the sliders audible while you drag them.
+ */
+function preview(body) {
+  const params = completeParams(body.params || {});
+  const seed = Number.isFinite(Number(body.seed)) ? Number(body.seed) : undefined;
+  const { samples, duration } = render(params, seed);
+
+  if (samples.length === 0) {
+    return { silent: true, duration: 0, peaks: [], params };
+  }
+
+  return {
+    params,
+    duration: Math.round(duration * 1000) / 1000,
+    wave_type: WAVE_NAMES[params.waveType] || String(params.waveType),
+    peaks: peaks(samples, PREVIEW_BUCKETS),
+    permalink: permalink(params, body.name || "sound"),
+    wav: Buffer.from(encodeWav(samples)).toString("base64"),
+  };
+}
+
+/**
+ * Parameter sets for the editor's buttons — preset, randomize, mutate, reset —
+ * handed back without touching the library.
+ */
+function editorParams(body) {
+  const seed = Number.isFinite(Number(body.seed)) ? Number(body.seed) : randomSeed();
+  const action = body.action || "preset";
+
+  if (action === "reset") return { params: defaultParams(), seed };
+  if (action === "randomize") {
+    return { params: makeParams({ preset: "random", seed }), seed };
+  }
+  if (action === "mutate") {
+    const amount = Math.min(1, Math.max(0.01, Number(body.amount) || 0.1));
+    return {
+      params: mutateParams(completeParams(body.params || {}), amount, seed),
+      seed,
+    };
+  }
+  if (action === "preset") {
+    return { params: makeParams({ preset: body.preset || "tone", seed }), seed };
+  }
+  throw new Error(`Unknown action "${action}".`);
+}
+
+/** Save the editor's current parameters as a brand new library entry. */
+function save(body) {
+  const seed = Number.isFinite(Number(body.seed)) ? Number(body.seed) : randomSeed();
+  const entry = createSound({
+    params: completeParams(body.params || {}),
+    name: safeName(body.name, "sound"),
+    dir: OUTPUT_DIR,
+    seed,
+    group: typeof body.group === "string" ? body.group.trim() : "",
+    prompt: typeof body.prompt === "string" ? body.prompt : "",
+    preset: typeof body.preset === "string" ? body.preset : "",
+    source: "web",
+  });
+  return { sounds: [entry] };
+}
+
+/** Open a bfxr.net permalink or the contents of a .bfxr file in the editor. */
+function importSound(body) {
+  const text = String(body.text || "").trim();
+  if (!text) throw new Error("Paste a bfxr.net link or the contents of a .bfxr file.");
+  const parsed = text.startsWith("{")
+    ? parseBfxrFile(text)
+    : parsePermalink(text);
+  return { name: parsed.name, params: completeParams(parsed.params) };
+}
+
 /* ------------------------------------------------------------------ routes */
 
 function state() {
@@ -180,7 +336,9 @@ function state() {
     designer: claudeAvailable() ? "claude" : "keywords",
     presets: allPresets(),
     wave_types: Object.keys(WAVE_TYPES),
-    parameters: parameterInfo().filter((p) => p.type === "number"),
+    parameters: parameterInfo(),
+    param_groups: paramGroups(),
+    defaults: defaultParams(),
     groups: groups(OUTPUT_DIR),
     sounds: loadLibrary(OUTPUT_DIR).sounds.sort((a, b) =>
       b.created.localeCompare(a.created),
@@ -268,6 +426,26 @@ async function route(req, res, url) {
     return;
   }
 
+  if (req.method === "POST" && pathname === "/api/preview") {
+    json(res, 200, preview(await readBody(req)));
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/params") {
+    json(res, 200, editorParams(await readBody(req)));
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/save") {
+    json(res, 200, save(await readBody(req)));
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/import") {
+    json(res, 200, importSound(await readBody(req)));
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/api/zip") {
     const ids = (searchParams.get("ids") || "").split(",").filter(Boolean);
     sendZip(res, ids, searchParams.get("name"));
@@ -285,14 +463,30 @@ async function route(req, res, url) {
   const sound = pathname.match(/^\/api\/sounds\/(.+)$/);
   if (sound) {
     const id = decodeURIComponent(sound[1]);
+    if (req.method === "GET") {
+      const entry = getEntry(OUTPUT_DIR, id);
+      if (!entry) return json(res, 404, { error: "Unknown sound" });
+      return json(res, 200, { ...entry, params: completeParams(entry.params) });
+    }
     if (req.method === "PATCH") {
       const body = await readBody(req);
       const changes = {};
       if (typeof body.name === "string") changes.name = body.name.slice(0, 80);
       if (typeof body.group === "string") changes.group = body.group.slice(0, 60);
       if (typeof body.starred === "boolean") changes.starred = body.starred;
-      const entry = updateEntry(OUTPUT_DIR, id, changes);
+      let entry = updateEntry(OUTPUT_DIR, id, changes);
       if (!entry) return json(res, 404, { error: "Unknown sound" });
+      // Editing parameters rewrites the .wav under the same name.
+      if (body.params) {
+        entry = updateSoundParams({
+          entry,
+          params: completeParams(body.params),
+          dir: OUTPUT_DIR,
+          seed: Number.isFinite(Number(body.seed))
+            ? Number(body.seed)
+            : (entry.seed ?? undefined),
+        });
+      }
       return json(res, 200, entry);
     }
     if (req.method === "DELETE") {

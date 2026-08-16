@@ -63,6 +63,7 @@ test("serves the page", async () => {
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.match(html, /bfxr sound library/);
+  assert.match(html, /pollLibrary/);
 });
 
 test("state describes the library and the engine", async () => {
@@ -130,6 +131,163 @@ test("rename, regroup, star, mutate and delete", async () => {
 
   const state = await api("/api/state");
   assert.ok(!state.sounds.some((s) => s.id === id));
+});
+
+test("the editor previews parameters without touching the library", async () => {
+  const state = await api("/api/state");
+  const before = state.sounds.length;
+
+  const result = await api("/api/preview", {
+    method: "POST",
+    body: {
+      params: { ...state.defaults, waveType: WAVE_TYPES.Square, sustainTime: 0.5 },
+      seed: 99,
+      name: "scratch",
+    },
+  });
+
+  assert.ok(result.duration > 0, "preview has length");
+  assert.equal(result.wave_type, "Square");
+  assert.ok(result.peaks.length > 200, "high-resolution peaks for the big canvas");
+  assert.match(result.permalink, /^https:\/\/www\.bfxr\.net\/\?sfx=/);
+  assert.equal(
+    Buffer.from(result.wav, "base64").toString("ascii", 0, 4),
+    "RIFF",
+    "playable audio comes back inline",
+  );
+
+  const after = await api("/api/state");
+  assert.equal(after.sounds.length, before, "nothing was written to disk");
+});
+
+test("the editor's sliders and buttons are described by /api/state", async () => {
+  const state = await api("/api/state");
+  const named = new Set(state.parameters.map((p) => p.name));
+
+  for (const group of state.param_groups) {
+    for (const name of group.params) {
+      assert.ok(named.has(name), `${name} in ${group.title} is a real parameter`);
+    }
+  }
+  const grouped = new Set(state.param_groups.flatMap((g) => g.params));
+  for (const param of state.parameters) {
+    if (param.type !== "number") continue;
+    assert.ok(grouped.has(param.name), `${param.name} has a slider somewhere`);
+  }
+
+  const waveType = state.parameters.find((p) => p.name === "waveType");
+  assert.equal(waveType.values.length, Object.keys(WAVE_TYPES).length);
+  assert.ok(waveType.values.every((v) => v.description), "buttons have tooltips");
+  assert.equal(Object.keys(state.defaults).length, state.parameters.length);
+});
+
+test("parameter sets for the preset / randomize / mutate buttons", async () => {
+  const reset = await api("/api/params", { method: "POST", body: { action: "reset" } });
+  const preset = await api("/api/params", {
+    method: "POST",
+    body: { action: "preset", preset: "laser_shoot", seed: 5 },
+  });
+  assert.notDeepEqual(preset.params, reset.params);
+
+  const again = await api("/api/params", {
+    method: "POST",
+    body: { action: "preset", preset: "laser_shoot", seed: 5 },
+  });
+  assert.deepEqual(again.params, preset.params, "the same seed repeats");
+
+  const mutated = await api("/api/params", {
+    method: "POST",
+    body: { action: "mutate", params: preset.params, amount: 0.2, seed: 11 },
+  });
+  assert.notDeepEqual(mutated.params, preset.params);
+
+  await assert.rejects(
+    () => api("/api/params", { method: "POST", body: { action: "wat" } }),
+    /Unknown action/,
+  );
+});
+
+test("editing a sound re-renders it in place", async () => {
+  const { sounds } = await api("/api/save", {
+    method: "POST",
+    body: {
+      params: { ...(await api("/api/state")).defaults, sustainTime: 0.1 },
+      name: "editable",
+      group: "edits",
+      seed: 1234,
+    },
+  });
+  const original = sounds[0];
+  assert.equal(original.group, "edits");
+
+  const fetched = await api(`/api/sounds/${original.id}`);
+  assert.deepEqual(fetched.params, original.params);
+
+  const edited = await api(`/api/sounds/${original.id}`, {
+    method: "PATCH",
+    body: {
+      name: "much longer",
+      params: { ...fetched.params, sustainTime: 0.9, decayTime: 0.9 },
+    },
+  });
+
+  assert.equal(edited.id, original.id, "the id survives an edit");
+  assert.equal(edited.file, original.file, "so does the file");
+  assert.equal(edited.name, "much longer");
+  assert.ok(edited.duration > original.duration, "the audio really changed");
+  assert.notEqual(edited.permalink, original.permalink);
+  assert.ok(edited.edited, "the edit is stamped");
+
+  const wav = fs.readFileSync(path.join(outputDir, edited.file));
+  assert.equal(wav.toString("ascii", 0, 4), "RIFF");
+  const samples = wav.readUInt32LE(40) / 2;
+  assert.ok(
+    Math.abs(samples / 44100 - edited.duration) < 0.01,
+    "the file on disk is as long as the library says",
+  );
+
+  const state = await api("/api/state");
+  const listed = state.sounds.find((s) => s.id === original.id);
+  assert.equal(listed.duration, edited.duration, "the library agrees");
+  assert.notDeepEqual(listed.peaks, original.peaks, "the waveform was redrawn");
+});
+
+test("permalinks and .bfxr files open in the editor", async () => {
+  const source = await api("/api/params", {
+    method: "POST",
+    body: { action: "preset", preset: "powerup", seed: 8 },
+  });
+  const { permalink } = await api("/api/preview", {
+    method: "POST",
+    body: { params: source.params, name: "zap" },
+  });
+
+  const opened = await api("/api/import", { method: "POST", body: { text: permalink } });
+  assert.equal(opened.name, "zap");
+  for (const [key, value] of Object.entries(source.params)) {
+    assert.ok(Math.abs(opened.params[key] - value) < 1e-6, `${key} round-trips`);
+  }
+
+  const fromFile = await api("/api/import", {
+    method: "POST",
+    body: {
+      text: JSON.stringify({
+        synth_type: "Bfxr",
+        file_name: "from-file",
+        params: source.params,
+      }),
+    },
+  });
+  assert.equal(fromFile.name, "from-file");
+
+  await assert.rejects(
+    () => api("/api/import", { method: "POST", body: { text: "not a sound" } }),
+    /Only Bfxr sounds are supported/,
+  );
+  await assert.rejects(
+    () => api("/api/import", { method: "POST", body: { text: "" } }),
+    /Paste a bfxr\.net link/,
+  );
 });
 
 test("selected sounds download as a zip", async () => {

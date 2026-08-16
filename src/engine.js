@@ -174,10 +174,12 @@ export function parameterInfo() {
       max: normalized.max_value - 1,
       label: param.display_name || param.name,
       description: "Waveform. Use the wave_type argument to set this by name.",
-      values: Object.entries(WAVE_TYPES).map(([waveName, index]) => ({
+      // In the synth's own order, which is how the buttons are laid out.
+      columns: param.columns,
+      values: param.values.map(([waveName, description, index]) => ({
         name: waveName,
         index,
-        description: (param.values.find((v) => v[0] === waveName) || [])[1],
+        description,
       })),
     };
   });

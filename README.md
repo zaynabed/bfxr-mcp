@@ -93,6 +93,33 @@ MCP server.
 
 `BFXR_PORT` picks the port (default 4747, next free port if taken).
 
+### The editor
+
+`✎` on any sound opens the full Bfxr editor — the same waveform buttons and
+parameter sliders the website has, without leaving the library. Sliders run down
+the left, the scope and the controls sit on the right, and the whole thing fits
+on one screen without scrolling:
+
+- A square **waveform display** of the sound as it currently stands, with a
+  playhead while it plays. Click it (or hit space) to hear it again.
+- All 12 **waveforms** as buttons, with the upstream tooltips. The Square Duty
+  panel greys itself out when a square wave isn't selected, exactly as on bfxr.net.
+- **31 sliders**, grouped into Envelope, Frequency, Vibrato, Pitch Jump, Harmonics,
+  Square Wave, Repeat, Flanger, Filters and Bit Crush. Anything moved off its
+  default is highlighted; click the number to put it back.
+- **Randomize / Mutate / Defaults / Revert** under the scope, and the preset
+  generators as a starting point.
+
+Letting go of a slider re-synthesizes on the server and plays the result, so what
+you hear is the same DSP that writes the file — nothing is approximated in the
+browser. **Save changes** rewrites that sound's `.wav` in place, keeping its name,
+group and links; **Save as new** leaves the original alone. Nothing touches disk
+until you save.
+
+**✎ New** starts from the default parameters, and **Open link…** takes a
+bfxr.net `?sfx=` permalink or the contents of a `.bfxr` file — so a sound made
+anywhere, by you or by Claude over MCP, can be opened and edited here.
+
 ### How the prompt box works
 
 Two designers, chosen automatically:

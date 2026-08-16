@@ -223,6 +223,212 @@
       .spin { display: inline-block; animation: spin 1s linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+      /* ------------------------------------------------------------ editor */
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        background: rgba(8, 6, 14, 0.66);
+        display: grid;
+        place-items: center;
+        padding: 14px;
+      }
+      .overlay[hidden] { display: none; }
+      .editor {
+        width: min(1120px, 100%);
+        max-height: calc(100vh - 28px);
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+      }
+      .ed-head, .ed-foot {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 12px 14px;
+        background: var(--panel);
+      }
+      .ed-head { border-bottom: 1px solid var(--line); }
+      .ed-foot { border-top: 1px solid var(--line); }
+      .ed-head .title {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .ed-head .title b { color: var(--accent-2); font-weight: 600; }
+      #ed-name { flex: 0 1 240px; min-width: 140px; }
+      #ed-group { flex: 0 1 150px; min-width: 100px; }
+      .ed-head .title { margin-right: auto; }
+      .ed-close {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: grid;
+        place-items: center;
+        margin-left: auto;
+      }
+      .ed-body { overflow: auto; padding: 14px; }
+      .ed-foot .spacer { flex: 1; }
+      .ed-foot .hint { margin: 0; max-width: 44ch; overflow-wrap: anywhere; }
+      .ed-foot a {
+        text-decoration: none;
+        color: inherit;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 11px;
+      }
+      .ed-foot a:hover { border-color: var(--accent); }
+
+      /* Sliders on the left, square + controls on the right. `order` keeps the
+         square first in source order, so it leads when this stacks on narrow
+         screens. */
+      .ed-body { display: flex; align-items: flex-start; gap: 12px; }
+      .ed-side { order: 2; flex: 0 0 280px; }
+      #ed-wave {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        cursor: pointer;
+      }
+      .scope {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 10px;
+      }
+      .scope .play {
+        width: 40px;
+        height: 40px;
+        font-size: 15px;
+        flex: none;
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #1b1206;
+      }
+      .readout {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 11.5px;
+        line-height: 1.35;
+        color: var(--muted);
+      }
+      .readout b { color: var(--text); font-weight: 600; }
+      .readout .warn { color: var(--accent); }
+      .toggle.live { margin-top: 8px; }
+
+      .ed-section {
+        font-size: 10.5px;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 10px 0 5px;
+      }
+      .waves {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px;
+      }
+      .waves button {
+        padding: 6px 4px;
+        font-size: 12px;
+        background: var(--panel-2);
+      }
+      .waves button.on {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #1b1206;
+        font-weight: 600;
+      }
+      .ed-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+      .ed-actions button {
+        flex: 1 1 auto;
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+      .ed-actions .chip { flex: 0 0 auto; padding: 3px 8px; font-size: 11.5px; }
+      .ed-actions.chips { margin-top: 0; }
+
+      /* Balanced columns pack the panels tightly whatever their heights. */
+      .pgroups {
+        flex: 1 1 auto;
+        min-width: 0;
+        column-width: 230px;
+        column-gap: 8px;
+      }
+      .pgroup {
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        margin: 0 0 8px;
+        font-size: 12px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel);
+        padding: 7px 9px 2px;
+      }
+      .pgroup h3 {
+        margin: 0 0 6px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .pgroup.inactive { opacity: 0.42; }
+      .pgroup.inactive h3::after {
+        content: " · square only";
+        letter-spacing: 0;
+        text-transform: none;
+      }
+      .param {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: baseline;
+        gap: 0 6px;
+        margin-bottom: 5px;
+      }
+      .param .label {
+        font-size: 11px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+      .param.changed .label { color: var(--accent-2); }
+      .param output {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 10px;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .param output:hover { color: var(--accent); }
+      .param input[type="range"] {
+        grid-column: 1 / -1;
+        width: 100%;
+        height: 14px;
+        margin: 1px 0 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+
+      @media (max-width: 720px) {
+        .ed-body { flex-direction: column; }
+        .ed-side { order: 0; flex: 1 1 auto; align-self: stretch; }
+        #ed-wave { max-width: 300px; }
+        .pgroups { align-self: stretch; }
+      }
     </style>
   </head>
   <body>
@@ -250,6 +456,12 @@
           </select>
           <input id="group" class="group-input" list="groups" placeholder="group" />
           <button class="primary" id="generate">Generate</button>
+          <button id="new-sound" title="Build a sound from scratch in the editor">
+            ✎ New
+          </button>
+          <button id="import" title="Open a bfxr.net link or .bfxr file">
+            Open link…
+          </button>
         </div>
         <div class="chips" id="presets"></div>
         <div class="hint" id="hint"></div>
@@ -285,6 +497,74 @@
 
     <datalist id="groups"></datalist>
 
+    <div class="overlay" id="overlay" hidden>
+      <section
+        class="editor"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Sound editor"
+      >
+        <div class="ed-head">
+          <input id="ed-name" placeholder="sound name" autocomplete="off" />
+          <input
+            id="ed-group"
+            list="groups"
+            placeholder="group"
+            autocomplete="off"
+          />
+          <div class="title" id="ed-title"></div>
+          <button class="ed-close" id="ed-close" title="Close (Esc)">✕</button>
+        </div>
+
+        <div class="ed-body">
+          <!-- Floated, and first in source order, so the sliders fill the
+               space beside it and then carry on underneath. -->
+          <div class="ed-side">
+            <canvas id="ed-wave"></canvas>
+            <div class="scope">
+              <button class="play" id="ed-play" title="Play (Space)">▶</button>
+              <div class="readout" id="ed-readout"></div>
+            </div>
+            <label class="toggle live">
+              <input type="checkbox" id="ed-live" checked /> play on change
+            </label>
+
+            <div class="ed-section">Waveform</div>
+            <div class="waves" id="ed-waves"></div>
+
+            <div class="ed-section">Shuffle</div>
+            <div class="ed-actions">
+              <button id="ed-random" title="Roll every parameter">Randomize</button>
+              <button id="ed-mutate" title="Nudge every parameter a little">
+                Mutate
+              </button>
+              <button id="ed-revert" title="Back to the last saved values">
+                Revert
+              </button>
+              <button id="ed-default" title="Reset every parameter to its default">
+                Defaults
+              </button>
+            </div>
+
+            <div class="ed-section">Start from</div>
+            <div class="ed-actions chips" id="ed-templates"></div>
+          </div>
+
+          <div class="pgroups" id="ed-params"></div>
+        </div>
+
+        <div class="ed-foot">
+          <button class="primary" id="ed-save">Save changes</button>
+          <button id="ed-saveas">Save as new</button>
+          <span class="hint" id="ed-status"></span>
+          <span class="spacer"></span>
+          <a id="ed-download" download>↓ .wav</a>
+          <button id="ed-copy" title="Copy the bfxr.net link">Copy link</button>
+          <a id="ed-open" target="_blank" rel="noreferrer">bfxr.net ↗</a>
+        </div>
+      </section>
+    </div>
+
     <script>
       const $ = (id) => document.getElementById(id);
       const audio = new Audio();
@@ -295,6 +575,20 @@
       let playingId = null;
       let queue = [];
       let lastVolume = 1;
+
+      // Editor: a working copy of one sound, previewed straight from the synth.
+      const preview = new Audio();
+      const paramRows = new Map();
+      let editor = null;
+      let editorBuilt = false;
+      let previewSound = null;
+      let previewUrl = null;
+      let previewTimer = null;
+      let previewToken = 0;
+      let previewPlay = false;
+      let playhead = null;
+
+      const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 
       /* ------------------------------------------------------------ api */
 
@@ -309,8 +603,8 @@
         return data;
       }
 
-      async function refresh() {
-        state = await api("/api/state");
+      function applyState(next) {
+        state = next;
         $("dir").textContent = state.output_dir;
         const claude = state.designer === "claude";
         $("designer").textContent = claude
@@ -320,6 +614,40 @@
         renderPresets();
         renderGroups();
         render();
+      }
+
+      function librarySig(snapshot) {
+        return (snapshot.sounds || [])
+          .map((sound) =>
+            [sound.id, sound.name, sound.group || "", sound.starred ? 1 : 0].join("\t"),
+          )
+          .join("\n");
+      }
+
+      function shouldSkipPoll() {
+        if ($("generate").disabled) return true;
+        if (editor) return true; // don't shuffle the list out from under the editor
+        const el = document.activeElement;
+        return Boolean(el && el.closest && el.closest(".sound"));
+      }
+
+      async function refresh() {
+        applyState(await api("/api/state"));
+      }
+
+      async function pollLibrary() {
+        if (shouldSkipPoll()) return;
+        try {
+          const next = await api("/api/state");
+          if (librarySig(next) === librarySig(state)) return;
+          const oldIds = new Set((state.sounds || []).map((sound) => sound.id));
+          for (const sound of next.sounds) {
+            if (!oldIds.has(sound.id)) fresh.add(sound.id);
+          }
+          applyState(next);
+        } catch {
+          /* library server may be restarting */
+        }
       }
 
       /* --------------------------------------------------------- render */
@@ -446,6 +774,11 @@
         star.className = sound.starred ? "starred" : "";
         star.onclick = () => patch(sound.id, { starred: !sound.starred });
 
+        const edit = document.createElement("button");
+        edit.textContent = "✎";
+        edit.title = "Open in the editor";
+        edit.onclick = () => openEditor({ id: sound.id });
+
         const vary = document.createElement("button");
         vary.textContent = "↻";
         vary.title = "Make variations of this sound";
@@ -469,7 +802,7 @@
         del.title = "Delete";
         del.onclick = () => remove(sound.id);
 
-        actions.append(star, vary, download, open, del);
+        actions.append(star, edit, vary, download, open, del);
         row.append(check, play, canvas, name, group, meta, actions);
         return row;
       }
@@ -546,6 +879,7 @@
       function setVolume(value, { persist = true } = {}) {
         const volume = Math.min(1, Math.max(0, Number(value) || 0));
         audio.volume = volume;
+        preview.volume = volume;
         $("volume").value = String(volume);
         $("volume").title = `${Math.round(volume * 100)}%`;
         $("mute").classList.toggle("muted", volume === 0);
@@ -573,6 +907,7 @@
       }
 
       function start(id) {
+        preview.pause(); // never overlap the editor's preview
         playingId = id;
         audio.src = `/api/audio/${encodeURIComponent(id)}`;
         audio.play().catch(() => {});
@@ -686,6 +1021,421 @@
         window.location.href = `/api/zip?${query}`;
       }
 
+      /* ---------------------------------------------------------- editor */
+
+      /**
+       * The editor keeps a working copy of one sound's parameters. Every change
+       * is re-synthesized by the server (the same engine that writes the files),
+       * so what you hear while dragging is exactly what gets saved.
+       */
+      function paramMeta(name) {
+        return (state.parameters || []).find((p) => p.name === name);
+      }
+
+      function buildEditor() {
+        if (editorBuilt || !state.parameters) return;
+
+        const waves = $("ed-waves");
+        waves.replaceChildren();
+        for (const wave of paramMeta("waveType").values) {
+          const button = document.createElement("button");
+          button.textContent = wave.name;
+          button.title = wave.description || "";
+          button.dataset.index = wave.index;
+          button.onclick = () => setParam("waveType", wave.index, { play: true });
+          waves.append(button);
+        }
+
+        const templates = $("ed-templates");
+        templates.replaceChildren();
+        for (const preset of state.presets) {
+          const button = document.createElement("button");
+          button.className = "chip";
+          button.textContent = preset.replace(/_/g, " ");
+          button.title = `Replace every parameter with a fresh ${preset.replace(/_/g, " ")}`;
+          button.onclick = () => rollParams({ action: "preset", preset });
+          templates.append(button);
+        }
+
+        const wrap = $("ed-params");
+        wrap.replaceChildren();
+        paramRows.clear();
+        for (const group of state.param_groups || []) {
+          const box = document.createElement("div");
+          box.className = "pgroup";
+          if (group.requires_wave !== undefined) {
+            box.dataset.requiresWave = group.requires_wave;
+          }
+          const heading = document.createElement("h3");
+          heading.textContent = group.title;
+          box.append(heading);
+          for (const name of group.params) {
+            const meta = paramMeta(name);
+            if (!meta || meta.type !== "number") continue;
+            box.append(paramRow(meta));
+          }
+          wrap.append(box);
+        }
+        editorBuilt = true;
+      }
+
+      function paramRow(meta) {
+        const row = document.createElement("div");
+        row.className = "param";
+
+        const label = document.createElement("span");
+        label.className = "label";
+        label.textContent = meta.label;
+        label.title = meta.description || "";
+
+        const out = document.createElement("output");
+        out.title = `Default ${meta.default} — click to reset`;
+        out.onclick = () => setParam(meta.name, meta.default, { play: true });
+
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.min = meta.min;
+        slider.max = meta.max;
+        slider.step = 0.001;
+        slider.title = meta.description || "";
+        slider.setAttribute("aria-label", meta.label);
+        // Dragging redraws the waveform; letting go is what plays it.
+        slider.oninput = () => setParam(meta.name, Number(slider.value));
+        slider.onchange = () => setParam(meta.name, Number(slider.value), { play: true });
+
+        row.append(label, out, slider);
+        paramRows.set(meta.name, { row, slider, out, meta });
+        return row;
+      }
+
+      function setParam(name, value, { play = false } = {}) {
+        if (!editor) return;
+        const meta = paramMeta(name);
+        let next = Number(value);
+        if (!Number.isFinite(next)) return;
+        if (meta) next = Math.min(meta.max, Math.max(meta.min, next));
+        editor.params[name] = next;
+        syncEditor();
+        schedulePreview({ play });
+      }
+
+      function syncEditor() {
+        if (!editor) return;
+        const params = editor.params;
+
+        for (const { row, slider, out, meta } of paramRows.values()) {
+          const value = Number(params[meta.name] ?? meta.default);
+          if (slider.value !== String(value)) slider.value = String(value);
+          out.textContent = value.toFixed(3);
+          row.classList.toggle("changed", Math.abs(value - meta.default) > 1e-6);
+        }
+
+        for (const button of $("ed-waves").children) {
+          button.classList.toggle(
+            "on",
+            Number(button.dataset.index) === Number(params.waveType),
+          );
+        }
+        for (const box of $("ed-params").children) {
+          if (box.dataset.requiresWave === undefined) continue;
+          box.classList.toggle(
+            "inactive",
+            Number(box.dataset.requiresWave) !== Number(params.waveType),
+          );
+        }
+
+        $("ed-download").download = `${$("ed-name").value.trim() || "sound"}.wav`;
+
+        const dirty = isDirty();
+        $("ed-title").innerHTML = editor.id
+          ? `editing <b>${escapeHtml(editor.id)}</b>${dirty ? " · unsaved" : ""}`
+          : `new sound${dirty ? " · unsaved" : ""}`;
+        $("ed-save").textContent = editor.id ? "Save changes" : "Save to library";
+        $("ed-saveas").hidden = !editor.id;
+        $("ed-revert").disabled = !dirty;
+      }
+
+      function escapeHtml(text) {
+        const node = document.createElement("span");
+        node.textContent = text;
+        return node.innerHTML;
+      }
+
+      function isDirty() {
+        if (!editor) return false;
+        if (JSON.stringify(editor.params) !== editor.baseline) return true;
+        if (!editor.id) return true;
+        return (
+          $("ed-name").value.trim() !== editor.name ||
+          $("ed-group").value.trim() !== (editor.group || "")
+        );
+      }
+
+      /* -------------------------------------------------- editor preview */
+
+      function schedulePreview({ play = false, delay = 130 } = {}) {
+        clearTimeout(previewTimer);
+        previewPlay = previewPlay || play;
+        previewTimer = setTimeout(() => {
+          const shouldPlay = previewPlay;
+          previewPlay = false;
+          renderPreview({ play: shouldPlay });
+        }, delay);
+      }
+
+      async function renderPreview({ play = false } = {}) {
+        if (!editor) return;
+        const token = ++previewToken;
+        try {
+          const result = await api("/api/preview", {
+            method: "POST",
+            body: {
+              params: editor.params,
+              seed: editor.seed ?? undefined,
+              name: $("ed-name").value.trim() || editor.name,
+            },
+          });
+          // A newer edit may have landed while this one was rendering.
+          if (token !== previewToken || !editor) return;
+          previewSound = result;
+          drawScope();
+          updateReadout();
+
+          if (result.silent) {
+            setPreviewSrc(null);
+            return;
+          }
+          setPreviewSrc(result.wav);
+          if (play && $("ed-live").checked) playPreview();
+        } catch (error) {
+          if (token === previewToken) editorStatus(error.message, true);
+        }
+      }
+
+      function setPreviewSrc(base64) {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+        if (!base64) {
+          preview.removeAttribute("src");
+          return;
+        }
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        previewUrl = URL.createObjectURL(new Blob([bytes], { type: "audio/wav" }));
+        preview.src = previewUrl;
+
+        const download = $("ed-download");
+        download.href = previewUrl;
+        download.download = `${$("ed-name").value.trim() || "sound"}.wav`;
+        $("ed-open").href = previewSound.permalink || "#";
+      }
+
+      function playPreview() {
+        if (!previewUrl) return;
+        audio.pause(); // the library player yields to the editor
+        queue = [];
+        preview.currentTime = 0;
+        preview.play().catch(() => {});
+        if (!playhead) playhead = requestAnimationFrame(tickPlayhead);
+      }
+
+      function tickPlayhead() {
+        playhead = null;
+        if (!editor) return;
+        drawScope();
+        if (!preview.paused) playhead = requestAnimationFrame(tickPlayhead);
+      }
+
+      preview.onended = () => {
+        $("ed-play").textContent = "▶";
+        drawScope();
+      };
+      preview.onplay = () => {
+        $("ed-play").textContent = "◼";
+      };
+      preview.onpause = () => {
+        $("ed-play").textContent = "▶";
+      };
+
+      function updateReadout() {
+        if (!previewSound) return;
+        $("ed-readout").innerHTML = previewSound.silent
+          ? '<span class="warn">silent — raise Sustain or Decay Time</span>'
+          : `<b>${previewSound.duration.toFixed(2)}s</b> · ${previewSound.wave_type} · 44.1kHz`;
+      }
+
+      function drawScope() {
+        const canvas = $("ed-wave");
+        const scale = window.devicePixelRatio || 1;
+        const width = canvas.clientWidth || 600;
+        const height = canvas.clientHeight || 128;
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+
+        const styles = getComputedStyle(document.body);
+        ctx.strokeStyle = styles.getPropertyValue("--line").trim();
+        ctx.lineWidth = 1;
+        // Centre line, plus faint half-amplitude guides so the square reads as a scope.
+        for (const at of [0.25, 0.5, 0.75]) {
+          const y = Math.round(height * at) + 0.5;
+          ctx.globalAlpha = at === 0.5 ? 1 : 0.4;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        const peaks = (previewSound && previewSound.peaks) || [];
+        const buckets = peaks.length / 2;
+        if (buckets) {
+          ctx.fillStyle = styles.getPropertyValue("--accent-2").trim();
+          const step = width / buckets;
+          for (let i = 0; i < buckets; i++) {
+            const top = (height / 2) * (1 - peaks[i * 2 + 1] * 0.94);
+            const bottom = (height / 2) * (1 - peaks[i * 2] * 0.94);
+            ctx.fillRect(i * step, top, Math.max(1, step - 0.4), Math.max(1, bottom - top));
+          }
+        }
+
+        if (previewSound && previewSound.duration && !preview.paused) {
+          const at = Math.min(1, preview.currentTime / previewSound.duration);
+          ctx.strokeStyle = styles.getPropertyValue("--accent").trim();
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(at * width, 0);
+          ctx.lineTo(at * width, height);
+          ctx.stroke();
+        }
+      }
+
+      /* ------------------------------------------------ editor lifecycle */
+
+      function editorStatus(message, isError = false) {
+        $("ed-status").textContent = message || "";
+        $("ed-status").className = isError ? "hint error" : "hint";
+      }
+
+      /**
+       * @param {object} [source] `{ id }` to edit a library sound, `{ name,
+       * params }` for an imported one, or nothing for a blank sound.
+       */
+      async function openEditor(source = {}) {
+        buildEditor();
+        try {
+          const entry = source.id
+            ? await api(`/api/sounds/${encodeURIComponent(source.id)}`)
+            : null;
+
+          editor = {
+            id: entry ? entry.id : null,
+            name: entry ? entry.name : source.name || "sound",
+            group: entry ? entry.group || "" : $("group").value.trim(),
+            preset: entry ? entry.preset || "" : "",
+            seed: entry ? (entry.seed ?? null) : randomSeed(),
+            params: { ...(entry ? entry.params : source.params || state.defaults) },
+          };
+          editor.baseline = JSON.stringify(editor.params);
+
+          $("ed-name").value = editor.name;
+          $("ed-group").value = editor.group;
+          $("overlay").hidden = false;
+          previewSound = null;
+          editorStatus("");
+          audio.pause();
+          queue = [];
+          syncEditor();
+          drawScope();
+          renderPreview();
+          $("ed-play").focus();
+        } catch (error) {
+          showError(error);
+        }
+      }
+
+      function closeEditor({ force = false } = {}) {
+        if (!editor) return;
+        if (!force && isDirty() && !confirm("Discard unsaved changes?")) return;
+        preview.pause();
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+        previewSound = null;
+        previewToken++;
+        clearTimeout(previewTimer);
+        editor = null;
+        $("overlay").hidden = true;
+        refresh().catch(showError);
+      }
+
+      /** Ask the server for a preset / randomized / mutated parameter set. */
+      async function rollParams(body) {
+        if (!editor) return;
+        try {
+          const result = await api("/api/params", {
+            method: "POST",
+            body: { ...body, params: editor.params },
+          });
+          editor.params = result.params;
+          if (body.action === "preset") editor.preset = body.preset;
+          // A new parameter set deserves fresh noise.
+          editor.seed = randomSeed();
+          syncEditor();
+          schedulePreview({ play: true, delay: 0 });
+        } catch (error) {
+          editorStatus(error.message, true);
+        }
+      }
+
+      async function saveEditor({ asNew = false } = {}) {
+        if (!editor) return;
+        const name = $("ed-name").value.trim() || "sound";
+        const group = $("ed-group").value.trim();
+        editorStatus("saving…");
+        try {
+          let entry;
+          if (asNew || !editor.id) {
+            const result = await api("/api/save", {
+              method: "POST",
+              body: {
+                params: editor.params,
+                name,
+                group,
+                preset: editor.preset,
+                seed: editor.seed ?? undefined,
+              },
+            });
+            entry = result.sounds[0];
+          } else {
+            entry = await api(`/api/sounds/${encodeURIComponent(editor.id)}`, {
+              method: "PATCH",
+              body: {
+                name,
+                group,
+                params: editor.params,
+                seed: editor.seed ?? undefined,
+              },
+            });
+          }
+
+          editor.id = entry.id;
+          editor.name = entry.name;
+          editor.group = entry.group || "";
+          editor.seed = entry.seed ?? null;
+          editor.baseline = JSON.stringify(editor.params);
+          $("ed-name").value = entry.name;
+          fresh.add(entry.id);
+          syncEditor();
+          editorStatus(`saved · ${entry.file}`);
+          await refresh();
+        } catch (error) {
+          editorStatus(error.message, true);
+        }
+      }
+
       /* ---------------------------------------------------------- events */
 
       $("generate").onclick = () => generate();
@@ -732,7 +1482,83 @@
         await refresh();
       };
 
+      $("new-sound").onclick = () => openEditor();
+
+      $("import").onclick = async () => {
+        const text = prompt(
+          "Paste a bfxr.net link, or the contents of a .bfxr file:",
+        );
+        if (!text) return;
+        try {
+          const result = await api("/api/import", {
+            method: "POST",
+            body: { text },
+          });
+          openEditor({ name: result.name, params: result.params });
+        } catch (error) {
+          showError(error);
+        }
+      };
+
+      $("ed-close").onclick = () => closeEditor();
+      $("overlay").onmousedown = (event) => {
+        if (event.target === $("overlay")) closeEditor();
+      };
+      $("ed-play").onclick = () =>
+        preview.paused ? playPreview() : preview.pause();
+      $("ed-wave").onclick = () => playPreview();
+      $("ed-random").onclick = () => rollParams({ action: "randomize" });
+      $("ed-mutate").onclick = () => rollParams({ action: "mutate", amount: 0.15 });
+      $("ed-default").onclick = () => rollParams({ action: "reset" });
+      $("ed-revert").onclick = () => {
+        if (!editor) return;
+        editor.params = JSON.parse(editor.baseline);
+        $("ed-name").value = editor.name;
+        $("ed-group").value = editor.group || "";
+        syncEditor();
+        schedulePreview({ play: true, delay: 0 });
+      };
+      $("ed-save").onclick = () => saveEditor();
+      $("ed-saveas").onclick = () => saveEditor({ asNew: true });
+      $("ed-name").oninput = syncEditor;
+      $("ed-group").oninput = syncEditor;
+      $("ed-copy").onclick = async () => {
+        if (!previewSound) return;
+        try {
+          await navigator.clipboard.writeText(previewSound.permalink);
+          editorStatus("link copied");
+        } catch {
+          editorStatus("could not copy — use the bfxr.net button", true);
+        }
+      };
+
+      window.addEventListener("resize", () => {
+        if (editor) drawScope();
+      });
+
       document.addEventListener("keydown", (event) => {
+        if (editor) {
+          const active = document.activeElement;
+          const typing =
+            active &&
+            (active.tagName === "TEXTAREA" ||
+              (active.tagName === "INPUT" && active.type !== "range"));
+          if (event.key === "Escape") {
+            event.preventDefault();
+            closeEditor();
+            return;
+          }
+          if ((event.metaKey || event.ctrlKey) && event.key === "s") {
+            event.preventDefault();
+            saveEditor();
+            return;
+          }
+          if (event.key === " " && !typing) {
+            event.preventDefault();
+            preview.paused ? playPreview() : preview.pause();
+          }
+          return;
+        }
         if (event.key === "Escape") stop();
         if (event.key === "/" && document.activeElement !== $("prompt")) {
           event.preventDefault();
@@ -744,6 +1570,10 @@
       lastVolume = storedVolume || 1;
       setVolume(storedVolume, { persist: false });
       refresh().catch(showError);
+      setInterval(pollLibrary, 1500);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) pollLibrary();
+      });
     </script>
   </body>
 </html>

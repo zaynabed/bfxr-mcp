@@ -11,7 +11,7 @@
   "scripts": {
     "start": "node src/index.js",
     "web": "node src/web.js",
-    "test": "node --test test/smoke.test.js test/web.test.js test/claude.test.js"
+    "test": "node --test test/smoke.test.js test/web.test.js test/claude.test.js test/hooks.test.js"
   },
   "files": [
     "src",

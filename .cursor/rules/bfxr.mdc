@@ -1,0 +1,13 @@
+---
+description: Never auto-play Bfxr sounds; refresh the library UI in Cursor after generating
+alwaysApply: true
+---
+
+# Bfxr MCP
+
+Never play audio. The user always plays sounds themselves in the library web app.
+
+- Do not call `play_sound`
+- Do not set `play: true` or `embed_audio: true` on `generate_sound` or `mutate_sound`
+- After `generate_sound` or `mutate_sound`, refresh the library in Cursor Simple Browser / Browser pane at `http://localhost:4747` (run `npm run web` first if it is not up)
+- Report file paths and permalinks; do not play the files

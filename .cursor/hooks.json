@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeMCPExecution": [
+      {
+        "command": "node .cursor/hooks/bfxr-mcp.js before-mcp"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "node .cursor/hooks/bfxr-mcp.js pre-tool",
+        "matcher": "play_sound|generate_sound|mutate_sound"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "node .cursor/hooks/bfxr-mcp.js after-write",
+        "matcher": "generate_sound|mutate_sound"
+      }
+    ]
+  }
+}
