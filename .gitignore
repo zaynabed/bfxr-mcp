@@ -1,0 +1,5 @@
+node_modules/
+*.wav
+*.bfxr
+.DS_Store
+.claude/

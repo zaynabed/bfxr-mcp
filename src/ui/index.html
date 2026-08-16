@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bfxr sound library</title>
+    <style>
+      :root {
+        --bg: #14121a;
+        --panel: #1d1a26;
+        --panel-2: #252131;
+        --line: #322c42;
+        --text: #ece8f5;
+        --muted: #9b93b0;
+        --accent: #ffb03a;
+        --accent-2: #4ad4c0;
+        --danger: #ff6b6b;
+        --radius: 10px;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f6f4f0;
+          --panel: #ffffff;
+          --panel-2: #f0ecf6;
+          --line: #ded8e8;
+          --text: #241f2e;
+          --muted: #6d6580;
+          --accent: #d97f00;
+          --accent-2: #128577;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: baseline;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0.02em;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      h1 span { color: var(--accent); }
+      .dir {
+        color: var(--muted);
+        font-size: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        overflow-wrap: anywhere;
+      }
+      .badge {
+        margin-left: auto;
+        font-size: 12px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .badge.claude { color: var(--accent-2); border-color: var(--accent-2); }
+      main { max-width: 1080px; margin: 0 auto; padding: 20px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .prompt-row { display: flex; gap: 8px; flex-wrap: wrap; }
+      input, select, button, textarea {
+        font: inherit;
+        color: inherit;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 11px;
+      }
+      input:focus-visible, select:focus-visible, button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      #prompt { flex: 1 1 340px; }
+      button { cursor: pointer; }
+      button:hover:not(:disabled) { border-color: var(--accent); }
+      button:disabled { opacity: 0.5; cursor: default; }
+      .primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #1b1206;
+        font-weight: 600;
+      }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+      .chip {
+        font-size: 13px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: transparent;
+      }
+      .hint { color: var(--muted); font-size: 13px; margin-top: 10px; }
+      .hint.error { color: var(--danger); }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .toolbar .spacer { flex: 1; }
+      label.toggle {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .volume {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .volume .mute {
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        color: var(--muted);
+      }
+      .volume .mute.muted { color: var(--danger); }
+      .volume input[type="range"] {
+        width: 96px;
+        height: 18px;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        accent-color: var(--accent);
+        cursor: pointer;
+      }
+      .group-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 22px 0 8px;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .group-head::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--line);
+      }
+      .sound {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--panel);
+        margin-bottom: 6px;
+      }
+      .sound.playing { border-color: var(--accent); }
+      .sound.fresh { border-color: var(--accent-2); }
+      .play {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        flex: none;
+      }
+      canvas.wave { flex: none; border-radius: 4px; background: var(--panel-2); }
+      .name { flex: 1 1 160px; min-width: 120px; padding: 6px 8px; }
+      .group-input { flex: 0 1 130px; min-width: 90px; padding: 6px 8px; font-size: 13px; }
+      .meta {
+        flex: none;
+        width: 116px;
+        text-align: right;
+        color: var(--muted);
+        font-size: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .actions { display: flex; gap: 4px; flex: none; }
+      .actions button, .actions a {
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        font-size: 14px;
+        text-decoration: none;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-2);
+        color: inherit;
+      }
+      .actions .starred { color: var(--accent); }
+      .actions .del:hover { border-color: var(--danger); color: var(--danger); }
+      .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+      .spin { display: inline-block; animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>bfxr<span>.</span>library</h1>
+      <div class="dir" id="dir"></div>
+      <div class="badge" id="designer"></div>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="prompt-row">
+          <input
+            id="prompt"
+            placeholder="describe a sound — e.g. deep crunchy explosion, tiny UI blip, rising powerup"
+            autocomplete="off"
+          />
+          <select id="count" title="How many variations">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="6">6</option>
+            <option value="8">8</option>
+          </select>
+          <input id="group" class="group-input" list="groups" placeholder="group" />
+          <button class="primary" id="generate">Generate</button>
+        </div>
+        <div class="chips" id="presets"></div>
+        <div class="hint" id="hint"></div>
+      </section>
+
+      <div class="toolbar">
+        <input id="search" placeholder="filter…" autocomplete="off" />
+        <select id="group-filter"><option value="">all groups</option></select>
+        <button id="select-all">Select all</button>
+        <button id="zip" disabled>Download .zip</button>
+        <button id="bulk-group" disabled>Set group</button>
+        <button id="bulk-delete" disabled>Delete</button>
+        <span class="spacer"></span>
+        <label class="toggle">
+          <input type="checkbox" id="autoplay" checked /> auto-play new
+        </label>
+        <div class="volume">
+          <button type="button" class="mute" id="mute" title="Mute">♪</button>
+          <input
+            type="range"
+            id="volume"
+            min="0"
+            max="1"
+            step="0.01"
+            value="1"
+            aria-label="Volume"
+          />
+        </div>
+      </div>
+
+      <div id="list"></div>
+    </main>
+
+    <datalist id="groups"></datalist>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const audio = new Audio();
+      const VOLUME_KEY = "bfxr-volume";
+      let state = { sounds: [], groups: [], presets: [] };
+      let selected = new Set();
+      let fresh = new Set();
+      let playingId = null;
+      let queue = [];
+      let lastVolume = 1;
+
+      /* ------------------------------------------------------------ api */
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+          body: options.body ? JSON.stringify(options.body) : undefined,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        return data;
+      }
+
+      async function refresh() {
+        state = await api("/api/state");
+        $("dir").textContent = state.output_dir;
+        const claude = state.designer === "claude";
+        $("designer").textContent = claude
+          ? "prompts → Claude API"
+          : "prompts → keyword mapper";
+        $("designer").classList.toggle("claude", claude);
+        renderPresets();
+        renderGroups();
+        render();
+      }
+
+      /* --------------------------------------------------------- render */
+
+      function renderPresets() {
+        const wrap = $("presets");
+        wrap.replaceChildren();
+        for (const preset of state.presets) {
+          const button = document.createElement("button");
+          button.className = "chip";
+          button.textContent = preset.replace(/_/g, " ");
+          button.onclick = () => generate({ preset });
+          wrap.append(button);
+        }
+      }
+
+      function renderGroups() {
+        const list = $("groups");
+        list.replaceChildren();
+        for (const group of state.groups) {
+          const option = document.createElement("option");
+          option.value = group;
+          list.append(option);
+        }
+        const filter = $("group-filter");
+        const current = filter.value;
+        filter.replaceChildren(new Option("all groups", ""));
+        for (const group of state.groups) filter.append(new Option(group, group));
+        filter.value = state.groups.includes(current) ? current : "";
+      }
+
+      function visibleSounds() {
+        const term = $("search").value.trim().toLowerCase();
+        const group = $("group-filter").value;
+        return state.sounds.filter((sound) => {
+          if (group && sound.group !== group) return false;
+          if (!term) return true;
+          return [sound.name, sound.prompt, sound.preset, sound.wave_type]
+            .filter(Boolean)
+            .some((field) => field.toLowerCase().includes(term));
+        });
+      }
+
+      function drawWave(canvas, peaks) {
+        const scale = window.devicePixelRatio || 1;
+        const width = 132;
+        const height = 34;
+        canvas.width = width * scale;
+        canvas.height = height * scale;
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        const ctx = canvas.getContext("2d");
+        ctx.scale(scale, scale);
+        const styles = getComputedStyle(document.body);
+        ctx.strokeStyle = styles.getPropertyValue("--accent-2").trim();
+        ctx.lineWidth = 1;
+        const buckets = peaks.length / 2;
+        const step = width / buckets;
+        for (let i = 0; i < buckets; i++) {
+          const min = peaks[i * 2];
+          const max = peaks[i * 2 + 1];
+          const x = Math.round(i * step) + 0.5;
+          const y1 = height / 2 - (max * height) / 2;
+          const y2 = height / 2 - (min * height) / 2;
+          ctx.beginPath();
+          ctx.moveTo(x, Math.min(y1, y2 - 0.5));
+          ctx.lineTo(x, Math.max(y2, y1 + 0.5));
+          ctx.stroke();
+        }
+      }
+
+      function soundRow(sound) {
+        const row = document.createElement("div");
+        row.className = "sound";
+        if (playingId === sound.id) row.classList.add("playing");
+        if (fresh.has(sound.id)) row.classList.add("fresh");
+
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.checked = selected.has(sound.id);
+        check.title = "Select";
+        check.onchange = () => {
+          if (check.checked) selected.add(sound.id);
+          else selected.delete(sound.id);
+          syncSelection();
+        };
+
+        const play = document.createElement("button");
+        play.className = "play";
+        play.textContent = playingId === sound.id ? "◼" : "▶";
+        play.title = "Play";
+        play.onclick = () => (playingId === sound.id ? stop() : playOne(sound.id));
+
+        const canvas = document.createElement("canvas");
+        canvas.className = "wave";
+        drawWave(canvas, sound.peaks || []);
+        canvas.onclick = () => playOne(sound.id);
+
+        const name = document.createElement("input");
+        name.className = "name";
+        name.value = sound.name;
+        name.onchange = () => patch(sound.id, { name: name.value.trim() });
+
+        const group = document.createElement("input");
+        group.className = "group-input";
+        group.setAttribute("list", "groups");
+        group.placeholder = "group";
+        group.value = sound.group || "";
+        group.onchange = () => patch(sound.id, { group: group.value.trim() });
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = `${sound.duration.toFixed(2)}s · ${sound.wave_type}`;
+        meta.title = sound.prompt
+          ? `"${sound.prompt}" → ${sound.preset || "custom"}`
+          : sound.preset || "custom";
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const star = document.createElement("button");
+        star.textContent = sound.starred ? "★" : "☆";
+        star.title = "Keep";
+        star.className = sound.starred ? "starred" : "";
+        star.onclick = () => patch(sound.id, { starred: !sound.starred });
+
+        const vary = document.createElement("button");
+        vary.textContent = "↻";
+        vary.title = "Make variations of this sound";
+        vary.onclick = () => mutate(sound.id);
+
+        const download = document.createElement("a");
+        download.textContent = "↓";
+        download.title = "Download .wav";
+        download.href = `/api/audio/${encodeURIComponent(sound.id)}?download=1`;
+
+        const open = document.createElement("a");
+        open.textContent = "↗";
+        open.title = "Open in bfxr.net to tweak by ear";
+        open.target = "_blank";
+        open.rel = "noreferrer";
+        open.href = sound.permalink;
+
+        const del = document.createElement("button");
+        del.textContent = "✕";
+        del.className = "del";
+        del.title = "Delete";
+        del.onclick = () => remove(sound.id);
+
+        actions.append(star, vary, download, open, del);
+        row.append(check, play, canvas, name, group, meta, actions);
+        return row;
+      }
+
+      function render() {
+        const list = $("list");
+        list.replaceChildren();
+        const sounds = visibleSounds();
+
+        if (sounds.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = state.sounds.length
+            ? "Nothing matches that filter."
+            : "No sounds yet — describe one above.";
+          list.append(empty);
+          syncSelection();
+          return;
+        }
+
+        const byGroup = new Map();
+        for (const sound of sounds) {
+          const key = sound.group || "";
+          if (!byGroup.has(key)) byGroup.set(key, []);
+          byGroup.get(key).push(sound);
+        }
+        const keys = [...byGroup.keys()].sort((a, b) =>
+          a === "" ? 1 : b === "" ? -1 : a.localeCompare(b),
+        );
+
+        for (const key of keys) {
+          const head = document.createElement("div");
+          head.className = "group-head";
+          const label = document.createElement("span");
+          label.textContent = key || "ungrouped";
+          const zip = document.createElement("button");
+          zip.className = "chip";
+          zip.textContent = "zip";
+          zip.title = "Download this group";
+          zip.onclick = () =>
+            downloadZip(byGroup.get(key).map((s) => s.id), key || "ungrouped");
+          head.append(label, zip);
+          list.append(head);
+          for (const sound of byGroup.get(key)) list.append(soundRow(sound));
+        }
+        syncSelection();
+      }
+
+      function syncSelection() {
+        // Drop selections for sounds that no longer exist.
+        const alive = new Set(state.sounds.map((s) => s.id));
+        for (const id of [...selected]) if (!alive.has(id)) selected.delete(id);
+        const any = selected.size > 0;
+        $("zip").disabled = !any;
+        $("bulk-group").disabled = !any;
+        $("bulk-delete").disabled = !any;
+        $("zip").textContent = any
+          ? `Download .zip (${selected.size})`
+          : "Download .zip";
+      }
+
+      /* -------------------------------------------------------- playback */
+
+      function readStoredVolume() {
+        try {
+          const stored = Number(localStorage.getItem(VOLUME_KEY));
+          if (Number.isFinite(stored)) return Math.min(1, Math.max(0, stored));
+        } catch {
+          /* private mode / blocked storage */
+        }
+        return 1;
+      }
+
+      function setVolume(value, { persist = true } = {}) {
+        const volume = Math.min(1, Math.max(0, Number(value) || 0));
+        audio.volume = volume;
+        $("volume").value = String(volume);
+        $("volume").title = `${Math.round(volume * 100)}%`;
+        $("mute").classList.toggle("muted", volume === 0);
+        $("mute").title = volume === 0 ? "Unmute" : "Mute";
+        if (volume > 0) lastVolume = volume;
+        if (persist) {
+          try {
+            localStorage.setItem(VOLUME_KEY, String(volume));
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+
+      function stop() {
+        audio.pause();
+        queue = [];
+        playingId = null;
+        render();
+      }
+
+      function playOne(id) {
+        queue = [];
+        start(id);
+      }
+
+      function start(id) {
+        playingId = id;
+        audio.src = `/api/audio/${encodeURIComponent(id)}`;
+        audio.play().catch(() => {});
+        render();
+      }
+
+      audio.onended = () => {
+        if (queue.length) start(queue.shift());
+        else {
+          playingId = null;
+          render();
+        }
+      };
+
+      function playSequence(ids) {
+        if (!ids.length) return;
+        queue = ids.slice(1);
+        start(ids[0]);
+      }
+
+      /* ------------------------------------------------------- mutations */
+
+      function setBusy(busy, message) {
+        $("generate").disabled = busy;
+        $("hint").className = "hint";
+        $("hint").innerHTML = busy
+          ? `<span class="spin">◐</span> ${message}`
+          : message || "";
+      }
+
+      function showError(error) {
+        $("generate").disabled = false;
+        $("hint").className = "hint error";
+        $("hint").textContent = error.message;
+      }
+
+      async function generate(extra = {}) {
+        const prompt = $("prompt").value.trim();
+        if (!prompt && !extra.preset) {
+          $("prompt").focus();
+          return;
+        }
+        setBusy(
+          true,
+          extra.preset ? `generating ${extra.preset}…` : "designing sound…",
+        );
+        try {
+          const result = await api("/api/generate", {
+            method: "POST",
+            body: {
+              prompt,
+              count: Number($("count").value),
+              group: $("group").value.trim(),
+              ...extra,
+            },
+          });
+          await afterGenerate(result);
+        } catch (error) {
+          showError(error);
+        }
+      }
+
+      async function mutate(id) {
+        setBusy(true, "making variations…");
+        try {
+          await afterGenerate(
+            await api("/api/mutate", { method: "POST", body: { id, count: 3 } }),
+          );
+        } catch (error) {
+          showError(error);
+        }
+      }
+
+      async function afterGenerate(result) {
+        const ids = result.sounds.map((s) => s.id);
+        fresh = new Set(ids);
+        await refresh();
+        const bits = [`${ids.length} new`];
+        if (result.rationale) bits.push(result.rationale);
+        if (result.note) bits.push(result.note);
+        setBusy(false, bits.join(" · "));
+        if ($("autoplay").checked) playSequence(ids);
+      }
+
+      async function patch(id, changes) {
+        try {
+          await api(`/api/sounds/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            body: changes,
+          });
+          await refresh();
+        } catch (error) {
+          showError(error);
+        }
+      }
+
+      async function remove(id) {
+        try {
+          await api(`/api/sounds/${encodeURIComponent(id)}`, { method: "DELETE" });
+          selected.delete(id);
+          if (playingId === id) stop();
+          await refresh();
+        } catch (error) {
+          showError(error);
+        }
+      }
+
+      function downloadZip(ids, name) {
+        if (!ids.length) return;
+        const query = new URLSearchParams({ ids: ids.join(","), name });
+        window.location.href = `/api/zip?${query}`;
+      }
+
+      /* ---------------------------------------------------------- events */
+
+      $("generate").onclick = () => generate();
+      $("prompt").onkeydown = (event) => {
+        if (event.key === "Enter") generate();
+      };
+      $("search").oninput = render;
+      $("group-filter").onchange = render;
+      $("volume").oninput = () => setVolume($("volume").value);
+      $("mute").onclick = () =>
+        setVolume(audio.volume === 0 ? lastVolume || 1 : 0);
+
+      $("select-all").onclick = () => {
+        const ids = visibleSounds().map((s) => s.id);
+        const allSelected = ids.every((id) => selected.has(id));
+        for (const id of ids) {
+          if (allSelected) selected.delete(id);
+          else selected.add(id);
+        }
+        render();
+      };
+
+      $("zip").onclick = () => downloadZip([...selected], "bfxr-pack");
+
+      $("bulk-group").onclick = async () => {
+        const group = prompt("Move selected sounds to group:", $("group").value);
+        if (group === null) return;
+        for (const id of [...selected]) {
+          await api(`/api/sounds/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            body: { group: group.trim() },
+          });
+        }
+        await refresh();
+      };
+
+      $("bulk-delete").onclick = async () => {
+        if (!confirm(`Delete ${selected.size} sound(s)? This removes the files.`))
+          return;
+        for (const id of [...selected]) {
+          await api(`/api/sounds/${encodeURIComponent(id)}`, { method: "DELETE" });
+        }
+        selected.clear();
+        await refresh();
+      };
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") stop();
+        if (event.key === "/" && document.activeElement !== $("prompt")) {
+          event.preventDefault();
+          $("search").focus();
+        }
+      });
+
+      const storedVolume = readStoredVolume();
+      lastVolume = storedVolume || 1;
+      setVolume(storedVolume, { persist: false });
+      refresh().catch(showError);
+    </script>
+  </body>
+</html>

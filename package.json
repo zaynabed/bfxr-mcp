@@ -1,0 +1,32 @@
+{
+  "name": "bfxr-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that generates game sound effects with the Bfxr synth engine and writes them to disk as WAV files.",
+  "type": "module",
+  "bin": {
+    "bfxr-mcp": "src/index.js",
+    "bfxr-web": "src/web.js"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "web": "node src/web.js",
+    "test": "node --test test/smoke.test.js test/web.test.js test/claude.test.js"
+  },
+  "files": [
+    "src",
+    "vendor",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.25.0"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^0.117.1"
+  },
+  "license": "MIT"
+}

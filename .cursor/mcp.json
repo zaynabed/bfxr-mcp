@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "bfxr": {
+      "command": "node",
+      "args": ["${workspaceFolder}/src/index.js"],
+      "env": {
+        "BFXR_OUTPUT_DIR": "${userHome}/Downloads/bfxr-sounds"
+      }
+    }
+  }
+}
